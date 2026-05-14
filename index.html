@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Running Tracker</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Inter,sans-serif;
+    }
+
+    body{
+      background:#0f172a;
+      color:white;
+      min-height:100vh;
+      padding:20px;
+    }
+
+    .container{
+      max-width:1200px;
+      margin:auto;
+    }
+
+    .header{
+      margin-bottom:30px;
+    }
+
+    .header h1{
+      font-size:40px;
+      font-weight:700;
+    }
+
+    .header p{
+      color:#94a3b8;
+      margin-top:8px;
+    }
+
+    .grid-layout{
+      display:grid;
+      grid-template-columns:350px 1fr;
+      gap:20px;
+    }
+
+    .card{
+      background:#1e293b;
+      border:1px solid #334155;
+      border-radius:24px;
+      padding:24px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .card-title{
+      font-size:20px;
+      font-weight:600;
+      margin-bottom:20px;
+    }
+
+    .form-grid{
+      display:grid;
+      gap:14px;
+    }
+
+    input{
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:14px;
+      background:#0f172a;
+      color:white;
+      font-size:15px;
+      border:1px solid #334155;
+      outline:none;
+    }
+
+    input:focus{
+      border-color:#3b82f6;
+    }
+
+    .buttons{
+      display:flex;
+      gap:10px;
+      margin-top:18px;
+    }
+
+    button{
+      flex:1;
+      border:none;
+      border-radius:14px;
+      padding:14px;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:600;
+      transition:0.2s;
+    }
+
+    .save-btn{
+      background:#2563eb;
+      color:white;
+    }
+
+    .save-btn:hover{
+      background:#1d4ed8;
+    }
+
+    .reset-btn{
+      background:#dc2626;
+      color:white;
+    }
+
+    .reset-btn:hover{
+      background:#b91c1c;
+    }
+
+    .status{
+      margin-top:16px;
+      color:#94a3b8;
+      font-size:14px;
+      text-align:center;
+    }
+
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:16px;
+      margin-bottom:20px;
+    }
+
+    .stat-box{
+      background:#0f172a;
+      border-radius:18px;
+      padding:20px;
+      border:1px solid #334155;
+    }
+
+    .stat-box p{
+      color:#94a3b8;
+      font-size:14px;
+    }
+
+    .stat-box h2{
+      margin-top:10px;
+      font-size:30px;
+    }
+
+    .history-table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:20px;
+    }
+
+    .history-table th{
+      text-align:left;
+      color:#94a3b8;
+      padding-bottom:14px;
+      font-size:14px;
+      font-weight:500;
+    }
+
+    .history-table td{
+      padding:16px 0;
+      border-top:1px solid #334155;
+      font-size:15px;
+    }
+
+    canvas{
+      margin-top:20px;
+      background:#0f172a;
+      border-radius:20px;
+      padding:15px;
+    }
+
+    @media(max-width:900px){
+
+      .grid-layout{
+        grid-template-columns:1fr;
+      }
+
+      .stats{
+        grid-template-columns:1fr 1fr;
+      }
+    }
+
+    @media(max-width:600px){
+
+      .stats{
+        grid-template-columns:1fr;
+      }
+
+      .buttons{
+        flex-direction:column;
+      }
+
+      .header h1{
+        font-size:32px;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Running Tracker</h1>
+    <p>Offline running analytics and progress tracking</p>
+  </div>
+
+  <div class="grid-layout">
+
+    <!-- FORM -->
+
+    <div class="card">
+
+      <div class="card-title">
+        Add Run
+      </div>
+
+      <form id="runForm">
+
+        <div class="form-grid">
+
+          <input type="date" id="date" required>
+
+          <input type="time" id="time" required>
+
+          <input
+            type="number"
+            id="distance"
+            placeholder="Distance (km)"
+            step="0.1"
+            required
+          >
+
+          <input
+            type="number"
+            id="steps"
+            placeholder="Steps"
+            required
+          >
+
+          <input
+            type="number"
+            id="calories"
+            placeholder="Calories"
+            required
+          >
+
+          <input
+            type="number"
+            id="runtime"
+            placeholder="Run Time (minutes)"
+            step="0.1"
+            required
+          >
+
+          <input
+            type="text"
+            id="pace"
+            placeholder="Pace"
+            readonly
+          >
+
+        </div>
+
+        <div class="buttons">
+
+          <button
+            type="submit"
+            class="save-btn"
+          >
+            Save Run
+          </button>
+
+          <button
+            type="button"
+            class="reset-btn"
+            onclick="resetData()"
+          >
+            Reset
+          </button>
+
+        </div>
+
+        <div
+          class="status"
+          id="status"
+        ></div>
+
+      </form>
+
+    </div>
+
+    <!-- DASHBOARD -->
+
+    <div>
+
+      <div class="stats">
+
+        <div class="stat-box">
+          <p>Total Runs</p>
+          <h2 id="totalRuns">0</h2>
+        </div>
+
+        <div class="stat-box">
+          <p>Total Distance</p>
+          <h2 id="totalDistance">0 km</h2>
+        </div>
+
+        <div class="stat-box">
+          <p>Total Calories</p>
+          <h2 id="totalCalories">0</h2>
+        </div>
+
+        <div class="stat-box">
+          <p>Average Pace</p>
+          <h2 id="avgPace">0</h2>
+        </div>
+
+      </div>
+
+      <div class="card">
+
+        <div class="card-title">
+          Distance Analytics
+        </div>
+
+        <canvas id="chart"></canvas>
+
+      </div>
+
+      <div class="card">
+
+        <div class="card-title">
+          Run History
+        </div>
+
+        <table class="history-table">
+
+          <thead>
+
+            <tr>
+              <th>Date</th>
+              <th>Distance</th>
+              <th>Calories</th>
+              <th>Pace</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="history"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+  const form =
+    document.getElementById('runForm');
+
+  let runs =
+    JSON.parse(localStorage.getItem('runs'))
+    || [];
+
+  function setDateTime(){
+
+    const now = new Date();
+
+    document.getElementById('date').value =
+      now.toISOString().split('T')[0];
+
+    document.getElementById('time').value =
+      now.toTimeString().slice(0,5);
+  }
+
+  setDateTime();
+
+  function calculatePace(){
+
+    const distance =
+      parseFloat(
+        document.getElementById('distance').value
+      );
+
+    const runtime =
+      parseFloat(
+        document.getElementById('runtime').value
+      );
+
+    if(distance && runtime){
+
+      const pace = runtime / distance;
+
+      document.getElementById('pace').value =
+        pace.toFixed(2) + ' min/km';
+    }
+  }
+
+  document
+    .getElementById('distance')
+    .addEventListener('input', calculatePace);
+
+  document
+    .getElementById('runtime')
+    .addEventListener('input', calculatePace);
+
+  form.addEventListener('submit', function(e){
+
+    e.preventDefault();
+
+    const run = {
+
+      date:
+        document.getElementById('date').value,
+
+      time:
+        document.getElementById('time').value,
+
+      distance:
+        document.getElementById('distance').value,
+
+      steps:
+        document.getElementById('steps').value,
+
+      calories:
+        document.getElementById('calories').value,
+
+      runtime:
+        document.getElementById('runtime').value,
+
+      pace:
+        document.getElementById('pace').value
+    };
+
+    runs.push(run);
+
+    localStorage.setItem(
+      'runs',
+      JSON.stringify(runs)
+    );
+
+    renderHistory();
+    updateStats();
+    updateChart();
+
+    document.getElementById('status').innerText =
+      'Run saved successfully';
+
+    form.reset();
+
+    setDateTime();
+  });
+
+  function renderHistory(){
+
+    const history =
+      document.getElementById('history');
+
+    history.innerHTML = '';
+
+    runs.reverse().forEach(run => {
+
+      history.innerHTML += `
+        <tr>
+          <td>${run.date}</td>
+          <td>${run.distance} km</td>
+          <td>${run.calories}</td>
+          <td>${run.pace}</td>
+        </tr>
+      `;
+    });
+
+    runs.reverse();
+  }
+
+  function updateStats(){
+
+    document.getElementById('totalRuns').innerText =
+      runs.length;
+
+    const totalDistance =
+      runs.reduce(
+        (sum,run)=>
+          sum + parseFloat(run.distance),
+        0
+      );
+
+    const totalCalories =
+      runs.reduce(
+        (sum,run)=>
+          sum + parseFloat(run.calories),
+        0
+      );
+
+    const avgPace =
+      runs.length
+      ? (
+        runs.reduce(
+          (sum,run)=>
+            sum + parseFloat(run.pace),
+          0
+        ) / runs.length
+      ).toFixed(2)
+      : 0;
+
+    document.getElementById('totalDistance').innerText =
+      totalDistance.toFixed(1) + ' km';
+
+    document.getElementById('totalCalories').innerText =
+      totalCalories;
+
+    document.getElementById('avgPace').innerText =
+      avgPace + ' min';
+  }
+
+  let chart;
+
+  function updateChart(){
+
+    const labels =
+      runs.map(run => run.date);
+
+    const distances =
+      runs.map(run => run.distance);
+
+    if(chart){
+      chart.destroy();
+    }
+
+    chart = new Chart(
+      document.getElementById('chart'),
+      {
+        type:'line',
+
+        data:{
+          labels:labels,
+
+          datasets:[{
+            label:'Distance',
+            data:distances,
+            tension:0.4,
+            borderWidth:3
+          }]
+        },
+
+        options:{
+          responsive:true,
+
+          plugins:{
+            legend:{
+              labels:{
+                color:'white'
+              }
+            }
+          },
+
+          scales:{
+            x:{
+              ticks:{
+                color:'#94a3b8'
+              }
+            },
+
+            y:{
+              ticks:{
+                color:'#94a3b8'
+              }
+            }
+          }
+        }
+      }
+    );
+  }
+
+  function resetData(){
+
+    const confirmReset =
+      confirm('Delete all running data?');
+
+    if(!confirmReset) return;
+
+    localStorage.removeItem('runs');
+
+    runs = [];
+
+    renderHistory();
+    updateStats();
+
+    if(chart){
+      chart.destroy();
+    }
+
+    updateChart();
+
+    document.getElementById('status').innerText =
+      'All data deleted';
+  }
+
+  renderHistory();
+  updateStats();
+  updateChart();
+
+</script>
+
+</body>
+</html>
